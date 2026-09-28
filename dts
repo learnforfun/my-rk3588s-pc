@@ -1,0 +1,393 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+/*
+
+ * Copyright (c) 2021 Rockchip Electronics Co., Ltd.
+
+  *
+
+   */
+
+
+
+   / {
+
+    	cam_ircut0: cam_ircut {
+
+            		status = "disabled";
+
+                    		compatible = "rockchip,ircut";
+
+                            		ircut-open-gpios = <&gpio4 RK_PA6 GPIO_ACTIVE_HIGH>;
+
+                                    		ircut-close-gpios  = <&gpio4 RK_PA7 GPIO_ACTIVE_HIGH>;
+
+                                            		rockchip,camera-module-index = <0>;
+
+                                                    		rockchip,camera-module-facing = "back";
+
+        };
+
+        	vcc_mipidphy0: vcc-mipidcphy0-regulator {
+
+                		status = "disabled";
+
+                        		compatible = "regulator-fixed";
+
+                                		gpio = <&gpio1 RK_PB1 GPIO_ACTIVE_HIGH>;
+
+                                        		pinctrl-names = "default";
+
+                                                		pinctrl-0 = <&mipidphy0_pwr>;
+
+                                                        		regulator-name = "vcc_mipidphy0";
+
+                                                                		enable-active-high;
+
+            };
+
+   };
+
+
+
+   &i2c7 {
+
+        status = "okay";
+
+            pinctrl-names = "default";
+
+                pinctrl-0 = <&i2c7m2_xfer>;
+
+
+
+                    os08a20: os08a20@36 {          // 节点名改为 os08a20，地址根据硬件确认
+
+                            compatible = "ovti,os08a20";  // 标准兼容性字符串
+
+                                    reg = <0x36>;                 // 务必核对原理图 I2C 地址，OS08A20 常见为 0x36
+
+
+
+                                            clocks = <&cru CLK_MIPI_CAMARAOUT_M1>;
+
+                                                    clock-names = "xvclk";         // OS08A20 通常使用 "xclk"
+
+                                                            pinctrl-names = "rockchip,camera_default";
+
+                                                                    pinctrl-0 = <&mipim1_camera1_clk>;
+
+                                                                            power-domains = <&power RK3588_PD_VI>;
+
+
+
+                                                                                    // 电源属性（根据原理图取消注释并引用正确的 regulator）
+
+                                                                                            // avdd-supply = <&vcc_mipidcphy0>;  // 模拟 2.8V
+
+                                                                                                    // dovdd-supply = <&vcc_1v8_s0>;     // I/O 1.8V
+
+                                                                                                            // dvdd-supply = <&vcc_1v2_s0>;      // 数字 1.2V
+
+
+
+                                                                                                                    //power-gpios = <&gpio3 RK_PB7 GPIO_ACTIVE_LOW>;  // 确认此 GPIO 的实际用途
+
+                                                                                                                            reset-gpios = <&gpio3 RK_PC4 GPIO_ACTIVE_HIGH>;  // OS08A20 XSHUTDOWN 通常低有效
+
+                                                                                                                                    pwdn-gpios = <&gpio3 RK_PC1 GPIO_ACTIVE_HIGH>;  // 若硬件无独立 pwdn 引脚，可考虑移除
+
+                                                                                                                                        
+
+                                                                                                                                                #define FF_COMPATIBLE 
+
+                                                                                                                                                        rockchip,camera-module-index = <0>;
+
+                                                                                                                                                                rockchip,camera-module-facing = "back";
+
+                                                                                                                                                                        rockchip,camera-module-name = "NC";       // 填入实际模组名称，便于识别
+
+                                                                                                                                                                                rockchip,camera-module-lens-name = "NC";  // 填入实际镜头名称
+
+
+
+                                                                                                                                                                                        port {
+
+                                                                                                                                                                                                        os08a20_out0: endpoint {
+
+                                                                                                                                                                                                                            remote-endpoint = <&mipidphy0_in_ucam2>;
+
+                                                                                                                                                                                                                                            data-lanes = <1 2 3 4>;   // 确认你的硬件走线是 4 lane 还是 2 lane
+
+                                                                                                                                                                                                        };
+
+                                                                                                                                                                                        };
+
+                    };
+
+   };
+
+
+
+   &csi2_dphy0 {
+
+    	status = "okay";
+
+        #ifdef FF_COMPATIBLE
+
+        	firefly-compatible;
+
+            #endif
+
+            	ports {
+
+                    		#address-cells = <1>;
+
+                            		#size-cells = <0>;
+
+                                    		port@0 {
+
+                                                			reg = <0>;
+
+                                                            			#address-cells = <1>;
+
+                                                                        			#size-cells = <0>;
+
+
+
+                                                                                    			mipidphy0_in_ucam2: endpoint@3 {
+
+                                                                                                    				reg = <3>;
+
+                                                                                                                    				remote-endpoint = <&os08a20_out0>;
+
+                                                                                                                                    				data-lanes = <1 2 3 4>;
+
+                                                                                                };
+
+                                            };
+
+                                            		port@1 {
+
+                                                        			reg = <1>;
+
+                                                                    			#address-cells = <1>;
+
+                                                                                			#size-cells = <0>;
+
+
+
+                                                                                            			csidphy0_out: endpoint@0 {
+
+                                                                                                            				reg = <0>;
+
+                                                                                                                            				remote-endpoint = <&mipi2_csi2_input0>;
+
+                                                                                                        };
+
+                                                    };
+
+                };
+
+   };
+
+
+
+   &csi2_dphy0_hw {
+
+    	status = "okay";
+
+   };
+
+
+
+   &mipi2_csi2 {
+
+    	status = "okay";
+
+        #ifdef FF_COMPATIBLE
+
+        	firefly-compatible;
+
+            #endif
+
+            	ports {
+
+                    		#address-cells = <1>;
+
+                            		#size-cells = <0>;
+
+
+
+                                    		port@0 {
+
+                                                			reg = <0>;
+
+                                                            			#address-cells = <1>;
+
+                                                                        			#size-cells = <0>;
+
+
+
+                                                                                    			mipi2_csi2_input0: endpoint@0 {
+
+                                                                                                    				reg = <0>;
+
+                                                                                                                    				remote-endpoint = <&csidphy0_out>;
+
+                                                                                                };
+
+                                            };
+
+
+
+                                            		port@1 {
+
+                                                        			reg = <1>;
+
+                                                                    			#address-cells = <1>;
+
+                                                                                			#size-cells = <0>;
+
+
+
+                                                                                            			mipi2_csi2_output: endpoint@0 {
+
+                                                                                                            				reg = <0>;
+
+                                                                                                                            				remote-endpoint = <&cif_mipi2_in0>;
+
+                                                                                                        };
+
+                                                    };
+
+                };
+
+   };
+
+
+
+   &pinctrl {
+
+    	cam {
+
+            		mipidphy0_pwr: mipidphy0-pwr {
+
+                        			rockchip,pins =
+
+                                    				/* camera power en */
+
+                                                    				<1 RK_PB1 RK_FUNC_GPIO &pcfg_pull_none>;
+
+                    };
+
+        };
+
+   };
+
+
+
+   &rkcif {
+
+    	status = "okay";
+
+        //	memory-region = <&cif_reserved>;
+
+   };
+
+
+
+   &rkcif_mipi_lvds2 {
+
+    	status = "okay";
+
+        	//firefly,yuv_camera;
+
+
+
+            	port {
+
+                    		cif_mipi2_in0: endpoint {
+
+                                			remote-endpoint = <&mipi2_csi2_output>;
+
+                            };
+
+                };
+
+   };
+
+
+
+   &rkcif_mipi_lvds2_sditf {
+
+    	status = "okay";
+
+
+
+        	port {
+
+                		mipi_lvds2_sditf: endpoint {
+
+                            			remote-endpoint = <&isp0_vir2>;
+
+                        };
+
+            };
+
+   };
+
+
+
+   &rkcif_mmu {
+
+    	status = "okay";
+
+   };
+
+
+
+   &rkisp0 {
+
+    	status = "okay";
+
+   };
+
+
+
+   &isp0_mmu {
+
+    	status = "okay";
+
+   };
+
+
+
+   &rkisp0_vir2 {
+
+    	status = "okay";
+
+
+
+        	port {
+
+                		#address-cells = <1>;
+
+                        		#size-cells = <0>;
+
+
+
+                                		isp0_vir2: endpoint@0 {
+
+                                            			reg = <0>;
+
+                                                        			remote-endpoint = <&mipi_lvds2_sditf>;
+
+                                        };
+
+            };
+
+   };
+                                                                                                                                                                                                        }
+                                                                                                                                                                                        }
+        }
+   }
